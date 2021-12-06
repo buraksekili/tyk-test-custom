@@ -1,64 +1,51 @@
-We would like to deprecate this repo as the release automation builds official images from the repo itself.
+# Introduction
 
-If you'd like this repo to keep going, please do describe your use case in an issue and we can work something out.
+This repo adds custom Go server upon the existent https://github.com/TykTechnologies/tyk-gateway-docker.
 
-Tyk Gateway Docker
-=================================
+## Steps
 
-This container only contains the Tyk OSS API Gateway, the Tyk Dashboard is provided as a separate container and needs to be configured separately.
+1. Create your Go server as here: https://github.com/buraksekili/tyk-test-custom/blob/master/main.go
+2. Create container of your server.
+    1. Your container will be created based on [this Dockerfile](https://github.com/buraksekili/tyk-test-custom/blob/master/Dockerfile.golang).
+    2. Compose file creates your container which referred to as [your-go-server](https://github.com/buraksekili/tyk-test-custom/blob/master/docker-compose.yml#L26) along with Tyk gateway
+3. Any requests coming into the host, on the port that Tyk is configured to run on, that go to [this path](https://github.com/buraksekili/tyk-test-custom/blob/b7813fb6dc0b79ebfb31ec8ef56d860f5523fbef/apps/hello-world.json#L23) will be proxied upstream target described [here](https://github.com/buraksekili/tyk-test-custom/blob/b7813fb6dc0b79ebfb31ec8ef56d860f5523fbef/apps/hello-world.json#L24)
 
-
-# Installation
-
-Want to install using only Docker, or want a more advanced guide?  Visit the [Docker install](get-started/install-with-docker.md) page.
-
-## Docker-Compose
-
-With docker-compose, simply run 
+## Genarate keys
+```bash
+curl localhost:8080/tyk/keys -X POST --header "x-tyk-authorization: foo" -d '
+{
+  "quota_max": 0,
+  "rate": 2,
+  "per": 5,
+  "org_id": "demo-org",
+  "access_rights": {
+      "demo-api-gateway-id": {
+          "api_name": "Tyk Test API",
+          "api_id": "demo-api-gateway-id",
+          "versions": [
+              "Default"
+          ],
+          "allowed_urls": [],
+          "limit": null,
+          "allowance_scope": ""
+      }
+    }
+}'
 ```
-$ docker-compose up -d
+And store it as, for instance, `$secretkey`.
+## Example
+
+```bash
+✗ curl -iSs -H "Authorization: $secretkey2" localhost:8080/test-api/api
+HTTP/1.1 200 OK
+Access-Control-Allow-Headers: Content-Type,access-control-allow-origin, access-control-allow-headers
+Access-Control-Allow-Origin: *
+Content-Length: 23
+Content-Type: application/json
+Date: Mon, 06 Dec 2021 14:29:29 GMT
+X-Ratelimit-Limit: 0
+X-Ratelimit-Remaining: 0
+X-Ratelimit-Reset: 1638799276
+
+{"document":"new doc"}
 ```
-
-[1. Your First API](get-started/your-first-api.md)
-
-[2. Your first token](get-started/your-first-token.md)
-
-[3. Your First Plugin](get-started/your-first-plugin.md)
-
-
-## Hybrid
-
-If you are setting up a Hybrid cluster, do the following:
-
-**NOTE:** If you are using Tyk Classic Cloud your `<MDCB-INGRESS>` url is: "hybrid.cloud.tyk.io:9091"
-
-1. Change the following 3 values in `tyk.hybrid.conf`:
-```json
-    "slave_options": {
-        "rpc_key": "<ORG_ID>",
-        "api_key": "<API-KEY>",
-        "connection_string": "<MDCB-INGRESS>:443",
-```
-
-it should look like this:
-
-```json
-    "slave_options": {
-        "rpc_key": "j3jf8as9991ad881349",
-        "api_key": "adk12k9d891j48df824",
-        "connection_string": "persistent-bangalore-hyb.aws-usw2.cloud-ara.tyk.io:443",
-```
-
-2. Mount the hybrid conf into the Gateway in `docker-compose.yml`
-
-From
-```
-- ./tyk.standalone.conf:/opt/tyk-gateway/tyk.conf
-```
-
-To:
-```
-- ./tyk.hybrid.conf:/opt/tyk-gateway/tyk.conf
-```
-
-That's it!  Now run `docker-compose up`
