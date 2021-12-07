@@ -1,12 +1,13 @@
 {
     "quota_max": 0,
     "rate": 2,
-    "per": 5,
+    "per": 10,
     "org_id": "demo-org",
+    "name": "test policy for demo",
     "access_rights": {
-        "1": {
-            "api_name": "Tyk Test API",
-            "api_id": "1",
+        "demo-api-gateway-id": {
+            "api_name": "demo api gateway",
+            "api_id": "demo-api-gateway-id",
             "versions": [
                 "Default"
             ],
